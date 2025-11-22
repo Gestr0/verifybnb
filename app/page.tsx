@@ -87,8 +87,7 @@ export default function BNBVerifyDApp() {
 
       console.log("🔵 Connecting to Trust Wallet...")
 
-      // Request account access (this will show popup)
-      const accounts = await walletProvider.request({ method: "eth_requestAccounts" })
+      const accounts = await walletProvider.enable()
 
       if (accounts && accounts.length > 0) {
         setAccount(accounts[0])
@@ -100,10 +99,7 @@ export default function BNBVerifyDApp() {
 
       return false
     } catch (error: any) {
-      if (error.code !== 4001) {
-        // Don't show error for user rejection
-        console.error("Trust Wallet connection failed:", error)
-      }
+      console.error("Connection error:", error)
       return false
     }
   }
@@ -294,25 +290,11 @@ export default function BNBVerifyDApp() {
   const switchToBSC = async (provider?: any) => {
     const walletProvider = provider || window.trustWallet
 
-    if (typeof window !== "undefined" && walletProvider) {
+    if (walletProvider) {
       try {
-        await walletProvider.request({
-          method: "wallet_switchEthereumChain",
-          params: [{ chainId: BSC_NETWORK.chainId }],
-        })
         setNetworkId(BSC_NETWORK.chainId)
-      } catch (switchError: any) {
-        if (switchError.code === 4902) {
-          try {
-            await walletProvider.request({
-              method: "wallet_addEthereumChain",
-              params: [BSC_NETWORK],
-            })
-            setNetworkId(BSC_NETWORK.chainId)
-          } catch (addError) {
-            console.error("Error adding BSC network:", addError)
-          }
-        }
+      } catch (error) {
+        console.error("Error switching network:", error)
       }
     }
   }
@@ -322,7 +304,6 @@ export default function BNBVerifyDApp() {
 
     if (typeof window !== "undefined" && walletProvider) {
       try {
-        // Get BNB balance
         const balance = await walletProvider.request({
           method: "eth_getBalance",
           params: [address, "latest"],
