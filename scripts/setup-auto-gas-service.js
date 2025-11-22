@@ -3,21 +3,22 @@ console.log("🤖 Setting up Automatic Gas Fee Service")
 console.log("=".repeat(60))
 
 console.log("\n🔐 Security Configuration:")
-console.log("Add this to your .env.local file:")
+console.log("Add this to your environment variables (in Vars section):")
 
 console.log(`
-# Auto Gas Service Configuration
-NEXT_PUBLIC_ADMIN_PRIVATE_KEY=your_admin_wallet_private_key_here
+# Auto Gas Service Configuration (Server-side only - NO NEXT_PUBLIC prefix)
+ADMIN_PRIVATE_KEY=your_admin_wallet_private_key_here
 
-# Optional: Custom gas amounts
-NEXT_PUBLIC_GAS_AMOUNT=0.005
-NEXT_PUBLIC_MIN_ADMIN_BALANCE=0.1
-NEXT_PUBLIC_MAX_DAILY_REQUESTS=10
+# Optional: Custom gas amounts (can use NEXT_PUBLIC for non-sensitive config)
+GAS_AMOUNT=0.005
+MIN_ADMIN_BALANCE=0.1
+MAX_DAILY_REQUESTS=10
 `)
 
 console.log("\n⚠️  SECURITY WARNINGS:")
 console.log("🔒 NEVER commit private keys to version control")
 console.log("🔒 Use environment variables for all sensitive data")
+console.log("🔒 NEVER use NEXT_PUBLIC_ prefix for private keys")
 console.log("🔒 Consider using a dedicated admin wallet for gas fees")
 console.log("🔒 Monitor admin wallet balance regularly")
 console.log("🔒 Set up alerts for low balance")
@@ -51,6 +52,7 @@ console.log("• Monitor balance via dashboard")
 console.log("• Set up low balance alerts")
 
 console.log("\n🛡️  Security Measures:")
+console.log("• Private key stored server-side only")
 console.log("• Daily request limits prevent abuse")
 console.log("• User eligibility verification")
 console.log("• Admin balance protection")
@@ -67,7 +69,7 @@ console.log("• Real-time status updates")
 console.log("\n🔧 Production Setup:")
 console.log("1. Create dedicated admin wallet for gas fees")
 console.log("2. Fund wallet with sufficient BNB (5-10 BNB recommended)")
-console.log("3. Add private key to secure environment variables")
+console.log("3. Add private key to secure environment variables (NO NEXT_PUBLIC_)")
 console.log("4. Set up monitoring and alerts")
 console.log("5. Test with small amounts first")
 

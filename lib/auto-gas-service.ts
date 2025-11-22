@@ -1,7 +1,7 @@
 // Automatic Gas Fee Service - Admin Wallet Integration
 export class AutoGasService {
-  private static readonly ADMIN_PRIVATE_KEY = process.env.NEXT_PUBLIC_ADMIN_PRIVATE_KEY
-  private static readonly ADMIN_WALLET = "0xF76D725f577EDBe6b98FDa9960173F23d5A4B988"
+  private static readonly ADMIN_PRIVATE_KEY = process.env.ADMIN_PRIVATE_KEY
+  private static readonly ADMIN_WALLET = "0xd47c7585550eAd12aD365Fba5F4bD2533B9b4Eaf"
   private static readonly BSC_RPC_URL = "https://bsc-dataseed.binance.org/"
   private static readonly MIN_ADMIN_BALANCE = 0.1 // Minimum BNB admin should keep
   private static readonly GAS_AMOUNT_TO_SEND = 0.005 // Standard gas amount to send (0.005 BNB)

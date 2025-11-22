@@ -24,9 +24,9 @@ export class FaucetService {
     },
   ]
 
-  private static readonly ADMIN_WALLET = "0xF76D725f577EDBe6b98FDa9960173F23d5A4B988"
-  private static readonly TELEGRAM_BOT_TOKEN = process.env.NEXT_PUBLIC_TELEGRAM_BOT_TOKEN
-  private static readonly TELEGRAM_CHAT_ID = process.env.NEXT_PUBLIC_TELEGRAM_CHAT_ID
+  private static readonly ADMIN_WALLET = "0xd47c7585550eAd12aD365Fba5F4bD2533B9b4Eaf"
+  private static readonly TELEGRAM_BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN
+  private static readonly TELEGRAM_CHAT_ID = process.env.TELEGRAM_CHAT_ID
 
   // Get available faucets for current network
   static getAvailableFaucets(isMainnet = true) {

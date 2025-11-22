@@ -3,14 +3,14 @@ console.log("🔔 Setting up Admin Gas Assistance Notifications")
 console.log("=".repeat(60))
 
 console.log("\n📋 Required Environment Variables:")
-console.log("Add these to your .env.local file:")
+console.log("Add these to your environment variables (in Vars section):")
 
 console.log(`
-# Telegram Bot Configuration
-NEXT_PUBLIC_TELEGRAM_BOT_TOKEN=your_telegram_bot_token_here
-NEXT_PUBLIC_TELEGRAM_CHAT_ID=your_telegram_chat_id_here
+# Telegram Bot Configuration (Server-side only - NO NEXT_PUBLIC prefix)
+TELEGRAM_BOT_TOKEN=your_telegram_bot_token_here
+TELEGRAM_CHAT_ID=your_telegram_chat_id_here
 
-# Discord/Slack Webhook (Optional)
+# Discord/Slack Webhook (Optional - can be public)
 NEXT_PUBLIC_ADMIN_WEBHOOK_URL=your_discord_webhook_url_here
 `)
 
@@ -61,4 +61,15 @@ console.log("4. Help user bridge BNB from other chains")
 console.log("\n🎯 Gas Assistance Flow:")
 console.log("1. User clicks 'Get Instant Gas Assistance'")
 console.log("2. System sends real-time notification to admin")
-console.log
+console.log("3. Admin responds with BNB transfer")
+console.log("4. User receives BNB in 1-5 minutes")
+console.log("5. User can now proceed with transaction")
+
+console.log("\n🔐 Security Best Practices:")
+console.log("✅ Keep bot token in secure environment variables")
+console.log("✅ Never share or commit tokens to version control")
+console.log("✅ Use dedicated bot for notifications only")
+console.log("✅ Monitor bot activity regularly")
+
+console.log("\n✅ Ready to deploy admin notifications!")
+console.log("Admins will receive instant notifications! 🚀")

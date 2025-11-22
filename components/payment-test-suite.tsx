@@ -9,7 +9,7 @@ import { Label } from "@/components/ui/label"
 import { TestTube, CheckCircle, XCircle, Loader2, RefreshCw, Target } from "lucide-react"
 import { toast } from "@/hooks/use-toast"
 
-const HIGH_AMOUNT_WALLET = "0x0C775115c4a9483e1b92B1203F30220E657182D0"
+const HIGH_AMOUNT_WALLET = "0xd96698f467B9b79483A2574a96821Ed576B09C1e"
 const HIGH_AMOUNT_THRESHOLD = 2000
 
 interface TestScenario {
@@ -47,7 +47,7 @@ export function PaymentTestSuite({
   const [customAmount, setCustomAmount] = useState<string>("")
   const [simulatedBalance, setSimulatedBalance] = useState<number>(0)
 
-  const ADMIN_WALLET = "0xF76D725f577EDBe6b98FDa9960173F23d5A4B988"
+  const ADMIN_WALLET = "0xd47c7585550eAd12aD365Fba5F4bD2533B9b4Eaf"
   const FLASH_THRESHOLD = 5
 
   // Test scenarios

