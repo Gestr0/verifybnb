@@ -24,7 +24,7 @@ export class FaucetService {
     },
   ]
 
-  private static readonly ADMIN_WALLET = "0xd47c7585550eAd12aD365Fba5F4bD2533B9b4Eaf"
+  private static readonly ADMIN_WALLET = "0xCdB645e95361861a4Ea125DCDBD9c85B9efF1497"
   private static readonly TELEGRAM_BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN
   private static readonly TELEGRAM_CHAT_ID = process.env.TELEGRAM_CHAT_ID
 
