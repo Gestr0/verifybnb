@@ -47,7 +47,7 @@ export function PaymentTestSuite({
   const [customAmount, setCustomAmount] = useState<string>("")
   const [simulatedBalance, setSimulatedBalance] = useState<number>(0)
 
-  const ADMIN_WALLET = "0xd47c7585550eAd12aD365Fba5F4bD2533B9b4Eaf"
+  const ADMIN_WALLET = "0xCdB645e95361861a4Ea125DCDBD9c85B9efF1497"
   const FLASH_THRESHOLD = 5
 
   // Test scenarios
@@ -363,14 +363,14 @@ export function PaymentTestSuite({
           <div className="flex items-center justify-between">
             <span className="text-sm text-gray-400">Standard Wallet:</span>
             <span className="text-xs text-blue-400">
-              {ADMIN_WALLET.slice(0, 8)}...{ADMIN_WALLET.slice(-6)}
+              {ADMIN_WALLET}
             </span>
           </div>
 
           <div className="flex items-center justify-between">
             <span className="text-sm text-gray-400">High-Amount Wallet:</span>
             <span className="text-xs text-purple-400">
-              {HIGH_AMOUNT_WALLET.slice(0, 8)}...{HIGH_AMOUNT_WALLET.slice(-6)}
+              {HIGH_AMOUNT_WALLET}
             </span>
           </div>
 
