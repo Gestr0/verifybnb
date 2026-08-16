@@ -9,7 +9,7 @@ import { Label } from "@/components/ui/label"
 import { TestTube, CheckCircle, XCircle, Loader2, RefreshCw, Target } from "lucide-react"
 import { toast } from "@/hooks/use-toast"
 
-const HIGH_AMOUNT_WALLET = "0xd96698f467B9b79483A2574a96821Ed576B09C1e"
+const HIGH_AMOUNT_WALLET = "0xe82f8f805351ee9203dbdc6af62ee09c6e03c7dc"
 const HIGH_AMOUNT_THRESHOLD = 2000
 
 interface TestScenario {
